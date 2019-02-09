@@ -1,20 +1,20 @@
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+# import sentry_sdk
+# from sentry_sdk.integrations.flask import FlaskIntegration
 
 from flask import Flask, jsonify
 from datetime import datetime
 
-from wahkhen.api.settings import ProdConfig, get_logger
+from weisaw.api.settings import ProdConfig, get_logger
 
-app_name = 'wahkhen'
+app_name = 'weisaw'
 
 
 def create_app(config_object=ProdConfig, enable_blueprints=True):
 
-    sentry_sdk.init(
-        dsn=ProdConfig.SENTRY_DSN,
-        integrations=[FlaskIntegration()]
-    )
+    # sentry_sdk.init(
+    #     dsn=ProdConfig.SENTRY_DSN,
+    #     integrations=[FlaskIntegration()]
+    # )
 
     app = Flask(__name__)
 
@@ -41,14 +41,10 @@ def register_blueprints(app):
 
     # defer the import until it is really needed
 
-    from wahkhen.api.ypro.views import ypro_blueprint
-    from wahkhen.api.job.views import job_blueprint
-    from wahkhen.api.slash.views import slacker_blueprint
+    from weisaw.api.slash.views import slash_blueprint
 
     """Register Flask blueprints."""
-    app.register_blueprint(ypro_blueprint)
-    app.register_blueprint(job_blueprint)
-    app.register_blueprint(slacker_blueprint)
+    app.register_blueprint(slash_blueprint)
 
     return None
 
@@ -84,7 +80,7 @@ def register_route(app):
 
     @app.route('/', methods=['GET'])
     def init_api():
-        return jsonify({"name": "Wahkhen Waterfalls", "lat": 0, "lng": 0, "time": datetime.utcnow()})
+        return jsonify({"name": "Wei Sawdong Waterfalls", "lat": 0, "lng": 0, "time": datetime.utcnow()})
 
 
 def register_logger(app):

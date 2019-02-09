@@ -2,13 +2,13 @@ import logging
 import sys
 import os
 from celery import Celery, states
-# from wahkhen.worker.settings import get_logger
+# from weisaw.worker.settings import get_logger
 
 # from raven import Client
 # from raven.contrib.celery import register_signal, register_logger_signal
 
-from wahkhen.api.core import create_app
-from wahkhen.api.settings import DevConfig, TestConfig, ProdConfig
+from weisaw.api.core import create_app
+from weisaw.api.settings import DevConfig, TestConfig, ProdConfig
 
 # celery worker -A dolores.worker.core.celery_task --loglevel=DEBUG
 # celery flower -A dolores.worker.core.celery_task
@@ -51,7 +51,7 @@ task_app.app_context().push()
 
 celery_task = Celery()
 celery_task.config_from_object(task_app.config, namespace='CELERY')
-# celery_task.autodiscover_tasks(packages=['wahkhen.worker'])
+# celery_task.autodiscover_tasks(packages=['weisaw.worker'])
 
 
 class BaseTask(celery_task.Task):

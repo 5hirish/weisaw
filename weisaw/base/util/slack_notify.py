@@ -3,7 +3,7 @@ import json
 import os
 from time import time
 
-# from wahkhen.api.settings import get_logger
+# from weisaw.api.settings import get_logger
 
 # logger = get_logger(__name__)
 
