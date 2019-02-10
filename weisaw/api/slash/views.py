@@ -22,6 +22,11 @@ def perform_before_request_tasks():
 
 @slash_blueprint.route('/ooo', methods=["POST"])
 def slack_out_of_office(type="ooo"):
+    """
+    Out of Office: Mark users as Out of Office, with period, email, type (ooo), user name and the raw command
+    :param type:
+    :return:
+    """
     user_id = request.form['user_id']
     user_name = request.form['user_name']
     response_url = request.form['response_url']
@@ -76,16 +81,28 @@ def slack_out_of_office(type="ooo"):
 
 @slash_blueprint.route('/wfh', methods=["POST"])
 def slack_work_from_home():
+    """
+    Working from home: Mark users as working from home with period, type (wfh), email, user name and raw command
+    :return:
+    """
     return slack_out_of_office("wfh")
 
 
 @slash_blueprint.route('/list', methods=["POST"])
 def slack_list_leaves():
+    """
+    Show all the ooo or wfh listings of the requesting user
+    :return:
+    """
     return slack_out_of_office("wfh")
 
 
 @slash_blueprint.route('/upcoming', methods=["POST"])
-def slack_upcoming_leaveskk():
+def slack_upcoming_leaves():
+    """
+    Show all the ooo or wfh of all the users for the requested day
+    :return:
+    """
     return slack_out_of_office("wfh")
 
 

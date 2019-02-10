@@ -82,14 +82,21 @@ def register_route(app):
 
     @app.route('/', methods=['GET'])
     def init_api():
-        return jsonify({"name": "Wei Sawdong", "lat": 25.291632, "lng": 91.6782126, "time": datetime.utcnow()})
+        return jsonify(
+            {
+                "name": "Wei Sawdong",
+                "lat": 25.291632, "lng": 91.6782126,
+                "time": datetime.utcnow(),
+                "developer": "Alleviate"
+            }
+        )
 
 
 def register_logger(app):
 
     gunicorn_logger = logging.getLogger('gunicorn.error')
 
-    log_dir = "log/wahkhen_app/"
+    log_dir = "log/weisaw_app/"
     # create file handler which logs even debug messages
     os.makedirs(os.path.dirname(log_dir), exist_ok=True)
 
@@ -100,7 +107,7 @@ def register_logger(app):
     # sh = SlackLogHandler(slack_hook_url,
     #                      channel=slack_log_channel, username="wahkhen_api")
 
-    fh = logging.FileHandler(log_dir+'wahkhen_app.log')
+    fh = logging.FileHandler(log_dir+'weisaw_app.log')
 
     fh.setLevel(logging.DEBUG)
     # create console handler with a higher log level
