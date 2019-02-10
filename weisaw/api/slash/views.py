@@ -3,7 +3,10 @@ import dateparser
 import os
 from datetime import datetime
 from slackclient import SlackClient
-from flask import Blueprint, Response, request, jsonify, session, send_file, current_app
+from flask import Blueprint, Response, request, jsonify, session, send_file, current_app, g
+
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.expression import and_, or_
 
 from weisaw.api.extensions import db
 from weisaw.base.models.employee_leave_model import EmployeeLeaveModel
@@ -21,6 +24,13 @@ def perform_before_request_tasks():
     is_token_valid = request.form['token'] == os.environ['SLACK_VERIFICATION_TOKEN']
     # is_team_id_valid = request.form['team_id'] == os.environ['SLACK_TEAM_ID']
 
+    g.user_id = request.form['user_id']
+    g.channel_id = request.form['channel_id']
+    g.team_id = request.form['team_id']
+    g.enterprise_id = request.form['enterprise_id']
+    g.user_name = request.form['user_name']
+    g.response_url = request.form['response_url']
+
     if not is_token_valid:
         return jsonify(
             {
@@ -30,19 +40,21 @@ def perform_before_request_tasks():
         ), 401
 
 
+@slash_blueprint.route('/wfh', methods=["POST"])
 @slash_blueprint.route('/ooo', methods=["POST"])
-def slack_out_of_office(op_type="ooo"):
+def slack_apply_leave(leave_type="ooo"):
     """
     Out of Office: Mark users as Out of Office, with period, email, type (ooo), user name and the raw command
-    :param op_type: ooo/wfh
+    Work from Home: Mark users as Work from Home, with period, email, type (wfh), user name and the raw command
+    :param leave_type: ooo/wfh
     :return:
     """
-    user_id = request.form['user_id']
-    channel_id = request.form['channel_id']
-    team_id = request.form['team_id']
-    enterprise_id = request.form['enterprise_id']
-    user_name = request.form['user_name']
-    response_url = request.form['response_url']
+
+    if "ooo" in request.path:
+        leave_type = "ooo"
+    else:
+        leave_type = "wfh"
+
     raw_text = request.form['text']
 
     nlp = spacy.load('en_core_web_sm')
@@ -73,10 +85,10 @@ def slack_out_of_office(op_type="ooo"):
 
     if start_date is not None and end_date is not None and days_count > 0:
         current_app.logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
-                                .format("example@abc.in", str(start_date), str(end_date), str(days_count), op_type,
-                                        raw_text, user_name))
+                                .format("example@abc.in", str(start_date), str(end_date), str(days_count), leave_type,
+                                        raw_text, g.user_name))
 
-        user_email, user_full_name, user_avatar = get_slack_user_info(user_id)
+        user_email, user_full_name, user_avatar = get_slack_user_info(g.user_id)
 
         if user_email is not None:
 
@@ -85,13 +97,13 @@ def slack_out_of_office(op_type="ooo"):
                 startDate=start_date,
                 endDate=end_date,
                 daysCount=days_count,
-                leaveType=op_type,
+                leaveType=leave_type,
                 rawComment=raw_text,
-                slackUsername=user_name,
-                slackUserId=user_id,
-                slackChannelId=channel_id,
-                slackTeamId=team_id,
-                slackEnterpriseId=enterprise_id,
+                slackUsername=g.user_name,
+                slackUserId=g.user_id,
+                slackChannelId=g.channel_id,
+                slackTeamId=g.team_id,
+                slackEnterpriseId=g.enterprise_id,
                 slackFullName=user_full_name,
                 slackAvatarUrl=user_avatar,
                 createdAt=datetime.now(),
@@ -99,12 +111,23 @@ def slack_out_of_office(op_type="ooo"):
 
             # insert_employee_leave(emp_leave)
 
-            response_msg = "Got it {0}...Safe travel!".format(user_name)
+            response_msg = "Got it {0}...Safe travel!".format(g.user_name)
+            if end_date == start_date:
+                attachment_msg = "Out of Office from {0} till {1}".format(start_date.strftime("%d/%b/%y"),
+                                                                          end_date.strftime("%d/%b/%y"))
+            else:
+                attachment_msg = "Out of Office on {0}".format(start_date.strftime("%d/%b/%y"))
 
             return jsonify(
                 {
                     "response_type": "ephemeral",
                     "text": response_msg,
+                    "attachments": [
+                        {
+                            "color": "good",
+                            "text": attachment_msg
+                        }
+                    ]
                 }
             ), 200
 
@@ -116,22 +139,68 @@ def slack_out_of_office(op_type="ooo"):
     ), 200
 
 
-@slash_blueprint.route('/wfh', methods=["POST"])
-def slack_work_from_home():
-    """
-    Working from home: Mark users as working from home with period, type (wfh), email, user name and raw command
-    :return:
-    """
-    return slack_out_of_office("wfh")
-
-
 @slash_blueprint.route('/list', methods=["POST"])
-def slack_list_leaves():
+def slack_emp_list_leaves():
     """
     Show all the ooo or wfh listings of the requesting user
     :return:
     """
-    return slack_out_of_office("wfh")
+
+    emp_leaves = EmployeeLeaveModel.query.filter(
+                                                    and_(
+                                                        EmployeeLeaveModel.slackUserId == g.user_id,
+                                                        EmployeeLeaveModel.slackTeamId == g.team_id,
+                                                        EmployeeLeaveModel.endDate >= datetime.now()
+                                                    )
+                                                ).all()
+
+    if emp_leaves is not None:
+
+        slack_msg_builder = {
+            "response_type": "ephemeral",
+            "text": "Following are your leaves:",
+        }
+
+        slack_msg_attachment_list = []
+
+        for emp_leave in emp_leaves:
+
+            if emp_leave.leaveType == "ooo":
+                msg_color = "#42a5f5"
+            else:
+                msg_color = "#bbdefb"
+
+            if emp_leave.startDate == emp_leave.endDate:
+                leave_period = "On " + emp_leave.startDate.strftime("%d/%b/%y")
+            else:
+                leave_period = emp_leave.startDate.strftime("%d/%b/%y") + " to " + emp_leave.endDate.strftime("%d/%b/%y")
+
+            slack_msg_attachment = {
+                "title": emp_leave.leaveType.upper(),
+                "color": msg_color,
+                "text": emp_leave.rawComment,
+                "fields": [
+                    {
+                        "title": "Period",
+                        "value": leave_period,
+                        "short": True
+                    }
+                ]
+            }
+
+            slack_msg_attachment_list.append(slack_msg_attachment)
+
+        slack_msg_builder["attachments"] = slack_msg_attachment_list
+
+        return jsonify(slack_msg_builder), 200
+
+    else:
+        return jsonify(
+            {
+                "response_type": "ephemeral",
+                "text": "Cool! No upcoming leaves for you!",
+            }
+        ), 200
 
 
 @slash_blueprint.route('/upcoming', methods=["POST"])
@@ -153,7 +222,7 @@ def get_slack_user_info(user_id):
     slack_token = os.environ["SLACK_API_TOKEN"]
     sc = SlackClient(slack_token)
 
-    slack_user_info = sc.api_call("users.info", user='user_id')
+    slack_user_info = sc.api_call("users.info", user=user_id)
 
     if slack_user_info is not None and slack_user_info.get("ok") and slack_user_info.get("user") is not None:
         if slack_user_info.get("user").get("profile") is not None:
