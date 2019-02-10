@@ -1,12 +1,17 @@
 import spacy
 import dateparser
-import psycopg2
-import requests
 import os
-from flask import Blueprint, Response, request, jsonify, session, send_file, abort
+from datetime import datetime
+from slackclient import SlackClient
+from flask import Blueprint, Response, request, jsonify, session, send_file, current_app
+
+from weisaw.api.extensions import db
+from weisaw.base.models.employee_leave_model import EmployeeLeaveModel
 
 blue_print_name = 'slash'
 blue_print_prefix = '/slash'
+
+Model = db.Model
 
 slash_blueprint = Blueprint(blue_print_name, __name__, url_prefix=blue_print_prefix)
 
@@ -17,17 +22,25 @@ def perform_before_request_tasks():
     # is_team_id_valid = request.form['team_id'] == os.environ['SLACK_TEAM_ID']
 
     if not is_token_valid:
-        abort(404)
+        return jsonify(
+            {
+                "response_type": "ephemeral",
+                "text": "Invalid verification token supplied :O",
+            }
+        ), 401
 
 
 @slash_blueprint.route('/ooo', methods=["POST"])
-def slack_out_of_office(type="ooo"):
+def slack_out_of_office(op_type="ooo"):
     """
     Out of Office: Mark users as Out of Office, with period, email, type (ooo), user name and the raw command
-    :param type:
+    :param op_type: ooo/wfh
     :return:
     """
     user_id = request.form['user_id']
+    channel_id = request.form['channel_id']
+    team_id = request.form['team_id']
+    enterprise_id = request.form['enterprise_id']
     user_name = request.form['user_name']
     response_url = request.form['response_url']
     raw_text = request.form['text']
@@ -59,24 +72,48 @@ def slack_out_of_office(type="ooo"):
             days_count = 1
 
     if start_date is not None and end_date is not None and days_count > 0:
-        # user_email = get_slack_user_email(user_id)
-        insert_leave("Empty", start_date, end_date, days_count, type, raw_text, user_name)
+        current_app.logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
+                                .format("example@abc.in", str(start_date), str(end_date), str(days_count), op_type,
+                                        raw_text, user_name))
 
-        response_msg = "Got it {0}...Safe travel!".format(user_name)
+        user_email, user_full_name, user_avatar = get_slack_user_info(user_id)
 
-        return jsonify(
-            {
-                "response_type": "ephemeral",
-                "text": response_msg,
-            }
-        ), 200
-    else:
-        return jsonify(
-            {
-                "response_type": "ephemeral",
-                "text": "Oops! Something went wrong... :/",
-            }
-        ), 200
+        if user_email is not None:
+
+            emp_leave = EmployeeLeaveModel(
+                emailAddress="abc@example.com",
+                startDate=start_date,
+                endDate=end_date,
+                daysCount=days_count,
+                leaveType=op_type,
+                rawComment=raw_text,
+                slackUsername=user_name,
+                slackUserId=user_id,
+                slackChannelId=channel_id,
+                slackTeamId=team_id,
+                slackEnterpriseId=enterprise_id,
+                slackFullName=user_full_name,
+                slackAvatarUrl=user_avatar,
+                createdAt=datetime.now(),
+            )
+
+            # insert_employee_leave(emp_leave)
+
+            response_msg = "Got it {0}...Safe travel!".format(user_name)
+
+            return jsonify(
+                {
+                    "response_type": "ephemeral",
+                    "text": response_msg,
+                }
+            ), 200
+
+    return jsonify(
+        {
+            "response_type": "ephemeral",
+            "text": "Oops! Something went wrong... :/",
+        }
+    ), 200
 
 
 @slash_blueprint.route('/wfh', methods=["POST"])
@@ -106,43 +143,24 @@ def slack_upcoming_leaves():
     return slack_out_of_office("wfh")
 
 
-def insert_leave(email_address, start_date, end_date, days_count, leave_type, raw_comment, slack_username):
-
-    insert_leave_sql = """INSERT INTO employee_leave
-            (email_address, start_date, end_date, days_count, leave_type, raw_comment, slack_username) 
-            VALUES(%s, %s, %s, %s, %s, %s, %s);"""
-    conn = None
-
-    try:
-
-        conn = psycopg2.connect(os.environ["RS_URI"])
-        cur = conn.cursor()
-        cur.execute(insert_leave_sql, (email_address, start_date, end_date, days_count, leave_type, raw_comment, slack_username))
-        conn.commit()
-        cur.close()
-
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conn is not None:
-            conn.close()
+def insert_employee_leave(emp_leave_info):
+    db.session.add(emp_leave_info)
+    db.session.commit()
 
 
-def get_slack_user_email(userid):
+def get_slack_user_info(user_id):
 
-    headers = {'content-type': 'x-www-form-urlencoded'}
-    data = [
-        ('token', os.environ["SLACK_ACCESS_TOKEN"]),
-        ('user', userid)
-    ]
+    slack_token = os.environ["SLACK_API_TOKEN"]
+    sc = SlackClient(slack_token)
 
-    slack_user_info = requests.get("https://slack.com/api/users.info", data=data, headers=headers)
+    slack_user_info = sc.api_call("users.info", user='user_id')
 
-    if slack_user_info.ok:
-        user_info_json = slack_user_info.json()
-        if user_info_json is not None and user_info_json.get("ok") and user_info_json.get("user") is not None:
-            if user_info_json.get("user").get("profile") is not None:
-                user_email = user_info_json.get("user").get("profile").get("email")
-                return user_email
-    return None
+    if slack_user_info is not None and slack_user_info.get("ok") and slack_user_info.get("user") is not None:
+        if slack_user_info.get("user").get("profile") is not None:
+            slack_user_profile = slack_user_info.get("user").get("profile")
+            user_email = slack_user_profile.get("email")
+            full_name = slack_user_profile.get("real_name")
+            avatar = slack_user_profile.get("image_512")
 
+            return user_email, full_name, avatar
+    return None, None, None
