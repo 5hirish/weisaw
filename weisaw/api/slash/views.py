@@ -1,7 +1,7 @@
 import spacy
 import dateparser
 import os
-from datetime import datetime
+from datetime import datetime, date
 from slackclient import SlackClient
 from flask import Blueprint, Response, request, jsonify, session, send_file, current_app, g
 
@@ -150,7 +150,7 @@ def slack_emp_list_leaves():
                                                     and_(
                                                         EmployeeLeaveModel.slackUserId == g.user_id,
                                                         EmployeeLeaveModel.slackTeamId == g.team_id,
-                                                        EmployeeLeaveModel.endDate >= datetime.now()
+                                                        EmployeeLeaveModel.endDate >= date.today()
                                                     )
                                                 ).all()
 
@@ -163,7 +163,7 @@ def slack_emp_list_leaves():
 
         slack_msg_attachment_list = []
 
-        for emp_leave in emp_leaves:
+        for i, emp_leave in enumerate(emp_leaves):
 
             if emp_leave.leaveType == "ooo":
                 msg_color = "#42a5f5"
@@ -176,7 +176,7 @@ def slack_emp_list_leaves():
                 leave_period = emp_leave.startDate.strftime("%d/%b/%y") + " to " + emp_leave.endDate.strftime("%d/%b/%y")
 
             slack_msg_attachment = {
-                "title": emp_leave.leaveType.upper(),
+                "title": str(i) + ") " + emp_leave.leaveType.upper(),
                 "color": msg_color,
                 "text": emp_leave.rawComment,
                 "fields": [
@@ -209,7 +209,66 @@ def slack_upcoming_leaves():
     Show all the ooo or wfh of all the users for the requested day
     :return:
     """
-    return slack_out_of_office("wfh")
+
+    upcoming_leaves = EmployeeLeaveModel.query.filter(
+                                                    and_(
+                                                        EmployeeLeaveModel.slackTeamId == g.team_id,
+                                                        EmployeeLeaveModel.endDate >= date.today()
+                                                    )
+                                                ).all()
+
+    if upcoming_leaves is not None:
+
+        slack_msg_builder = {
+            "response_type": "ephemeral",
+            "text": "Coming up:",
+        }
+
+        slack_msg_attachment_list = []
+
+        for emp_leave in upcoming_leaves:
+
+            if emp_leave.leaveType == "ooo":
+                msg_color = "#42a5f5"
+            else:
+                msg_color = "#bbdefb"
+
+            if emp_leave.startDate == emp_leave.endDate:
+                leave_period = "On " + emp_leave.startDate.strftime("%d/%b/%y")
+            else:
+                leave_period = emp_leave.startDate.strftime("%d/%b/%y") + " to " + emp_leave.endDate.strftime("%d/%b/%y")
+
+            slack_msg_attachment = {
+                "title": emp_leave.slackFullName + " - (" + emp_leave.slackUsername + ")",
+                "color": msg_color,
+                "text": emp_leave.rawComment,
+                "fields": [
+                    {
+                        "title": "Period",
+                        "value": leave_period,
+                        "short": True
+                    },
+                    {
+                        "title": "Status",
+                        "value": emp_leave.leaveType.upper(),
+                        "short": True
+                    }
+                ]
+            }
+
+            slack_msg_attachment_list.append(slack_msg_attachment)
+
+        slack_msg_builder["attachments"] = slack_msg_attachment_list
+
+        return jsonify(slack_msg_builder), 200
+
+    else:
+        return jsonify(
+            {
+                "response_type": "ephemeral",
+                "text": "Wow! Everybody is in today.",
+            }
+        ), 200
 
 
 def insert_employee_leave(emp_leave_info):
