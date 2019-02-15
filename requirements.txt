@@ -1,3 +1,5 @@
+pytest
+gunicorn
 
 flask
 flask_sqlalchemy
