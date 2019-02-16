@@ -61,4 +61,4 @@ def post_install():
     # os.environ["SLACK_USER_TOKEN"] = auth_response['access_token']
     # os.environ["SLACK_BOT_TOKEN"] = auth_response['bot']['bot_access_token']
 
-    return auth_response
+    return jsonify(auth_response), 200
