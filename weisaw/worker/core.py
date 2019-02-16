@@ -1,7 +1,7 @@
 import logging
 import sys
 import os
-from celery import Celery, states
+# from celery import Celery, states
 # from weisaw.worker.settings import get_logger
 
 # from raven import Client
@@ -49,21 +49,21 @@ task_app.app_context().push()
 # logger = get_logger()
 # sentry_client = get_sentry_client(app_config)
 
-celery_task = Celery()
-celery_task.config_from_object(task_app.config, namespace='CELERY')
+# celery_task = Celery()
+# celery_task.config_from_object(task_app.config, namespace='CELERY')
 # celery_task.autodiscover_tasks(packages=['weisaw.worker'])
 
 
-class BaseTask(celery_task.Task):
-    """Abstract base class for all tasks in the app."""
-
-    abstract = True
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to something like sentry at retry."""
-        super(BaseTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to something like sentry."""
-        # sentry_client.captureException()
-        super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
+# class BaseTask(celery_task.Task):
+#     """Abstract base class for all tasks in the app."""
+#
+#     abstract = True
+#
+#     def on_retry(self, exc, task_id, args, kwargs, einfo):
+#         """Log the exceptions to something like sentry at retry."""
+#         super(BaseTask, self).on_retry(exc, task_id, args, kwargs, einfo)
+#
+#     def on_failure(self, exc, task_id, args, kwargs, einfo):
+#         """Log the exceptions to something like sentry."""
+#         # sentry_client.captureException()
+#         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)

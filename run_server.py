@@ -2,7 +2,7 @@ import sys
 import os
 import logging
 from weisaw.api.core import create_app
-from weisaw.worker.core import celery_task
+# from weisaw.worker.core import celery_task
 from weisaw.api.settings import DevConfig, TestConfig, ProdConfig
 
 

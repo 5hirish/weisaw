@@ -1,12 +1,8 @@
 import os
 import logging
-from dotenv import load_dotenv
 # from slack_log_handler import SlackLogHandler
 
-# load_dotenv()
-
 # OR, the same with increased verbosity:
-load_dotenv(verbose=True)
 
 
 class Config:

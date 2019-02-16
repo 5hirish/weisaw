@@ -2,9 +2,12 @@ pytest
 gunicorn
 
 flask
+werkzeug[watchdog]
 flask_sqlalchemy
 flask_migrate
+flask-dotenv
 
+python-dotenv
 spacy
 dateparser
 slackclient
