@@ -99,7 +99,7 @@ def slack_apply_leave(leave_type="ooo"):
                 createdAt=datetime.now(),
             )
 
-            # insert_employee_leave(emp_leave)
+            insert_employee_leave(emp_leave)
 
             response_msg = "Got it {0}...Safe travel!".format(g.user_name)
             if end_date == start_date:

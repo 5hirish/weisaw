@@ -7,7 +7,7 @@ from flask import Flask, jsonify
 from datetime import datetime
 
 from weisaw.api.settings import ProdConfig
-from weisaw.api.extensions import migrate, db, env
+from weisaw.api.extensions import migrate, db
 
 app_name = 'weisaw'
 
@@ -37,7 +37,6 @@ def create_app(config_object=ProdConfig, enable_blueprints=True):
 def register_extensions(app):
     """Register Flask extensions."""
     # sentry.init_app(app)
-    env.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
     return None

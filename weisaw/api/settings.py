@@ -9,29 +9,19 @@ class Config:
     """Base configuration."""
 
     SECRET_KEY = os.getenv("SECRET_KEY")
+    SESSION_COOKIE_NAME = 'weisaw_app'
 
-    APP_DIR = os.path.abspath(os.path.dirname(__file__))  # This directory
-    PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
-
-    # DB_DIALECT = ''
-    # DB_DRIVER = ''
-    # DB_NAME = ''
-
-    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
-
-    SESSION_COOKIE_NAME = 'wahkhen_app'
-    # SESSION_COOKIE_SECURE = False    # Browsers will only send cookies with requests over HTTPS.
-    # SESSION_PERMANENT = False
-    # SESSION_USE_SIGNER = True
-
-    # MAIL_SERVER = 'localhost'
-    # MAIL_PORT = 25
-    # MAIL_DEFAULT_SENDER = 'no_reply@localhost.com'
-
-    SENTRY_DSN = ""
+    SENTRY_DSN = os.getenv("SENTRY_DSN")
 
     UPLOAD_FOLDER = os.getcwd() + "/weisaw/static/"
+
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SLACK_CLIENT_ID = os.getenv('SLACK_CLIENT_ID')
+    SLACK_CLIENT_SECRET = os.getenv('SLACK_CLIENT_SECRET')
+    SLACK_BOT_SCOPE = os.getenv('SLACK_BOT_SCOPE')
+    SLACK_SIGNING_SECRET = os.getenv('SLACK_SIGNING_SECRET')
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 class ProdConfig(Config):
@@ -41,40 +31,12 @@ class ProdConfig(Config):
 
     DEBUG = False
 
-    # CELERY_BROKER_URL = ''
-    # CELERY_RESULT_BACKEND = ''
-
-    # DB_USERNAME = ''
-    # DB_PASSWORD = ''
-    # DB_HOSTNAME = ''
-    # DB_PORT = ''
-    #
-    # SQLALCHEMY_DATABASE_URI = Config.DB_DIALECT + '+' + Config.DB_DRIVER + '://' \
-    #                           + DB_USERNAME + ':' + DB_PASSWORD +'@' + DB_HOSTNAME + ':'
-    #                           + DB_PORT + '/' + Config.DB_NAME
-
-    SENTRY_DSN = "https://7e422fa26fc741e6a0612d4163a1bdbe@sentry.io/1361447"
-
 
 class DevConfig(Config):
     """Development configuration."""
 
     ENV = 'dev'
     DEBUG = True
-
-    # CELERY_BROKER_URL = ''
-    # CELERY_RESULT_BACKEND = ''
-
-    # DB_USERNAME = ''
-    # DB_PASSWORD = ''
-    # DB_HOSTNAME = ''
-    # DB_PORT = ''
-
-    # SQLALCHEMY_DATABASE_URI = Config.DB_DIALECT + '+' + Config.DB_DRIVER + '://' \
-    #                          + DB_USERNAME + ':' + DB_PASSWORD + '@' + DB_HOSTNAME
-    #                          + ':' + DB_PORT + '/' + Config.DB_NAME
-
-    # DATABASE_URL = SQLALCHEMY_DATABASE_URI
 
     SQLALCHEMY_ECHO = True
 
