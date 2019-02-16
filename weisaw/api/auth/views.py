@@ -8,6 +8,7 @@ from flask import Blueprint, Response, request, jsonify, session, send_file, cur
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import and_, or_
 
+from weisaw.base.models.slack_auth_model import SlackOAuth
 from weisaw.api.extensions import db
 
 blue_print_name = 'auth'
@@ -35,7 +36,6 @@ def pre_install():
 
 @auth_blueprint.route("/finish", methods=["GET", "POST"])
 def post_install():
-
     client_id = os.environ.get("SLACK_CLIENT_ID")
     client_secret = os.environ.get("SLACK_CLIENT_SECRET")
     oauth_scope = os.environ.get("SLACK_BOT_SCOPE")
@@ -55,10 +55,30 @@ def post_install():
 
     print(auth_response)
 
-    if auth_response is not None:
-        pass
+    if auth_response is not None and auth_response.get("ok"):
+        auth_access_token = auth_response.get("access_token")
+        auth_scope = auth_response.get("scope")
+        auth_team_id = auth_response.get("team_id")
+        auth_team_name = auth_response.get("team_name")
+        auth_user_id = auth_response.get("user_id")
+        auth_incoming_webhook = auth_response.get("incoming_webhook")
+        auth_channel = auth_incoming_webhook.get("channel")
+        auth_channel_id = auth_incoming_webhook.get("channel_id")
+        auth_webhook_url = auth_incoming_webhook.get("url")
 
-    # os.environ["SLACK_USER_TOKEN"] = auth_response['access_token']
-    # os.environ["SLACK_BOT_TOKEN"] = auth_response['bot']['bot_access_token']
+        slack_oauth = SlackOAuth(
+            authScope=auth_scope,
+            accessToken=auth_access_token,
+            slackTeamId=auth_team_id,
+            slackTeamName=auth_team_name,
+            slackUserId=auth_user_id,
+            slackAuthChannelId=auth_channel_id,
+            slackAuthChannel=auth_channel,
+            slackWebHookUrl=auth_webhook_url
+        )
 
-    return jsonify(auth_response), 200
+        db.session.add(slack_oauth)
+        db.session.commit()
+
+        return jsonify({"status": "success", "msg": "Authentication successful"}), 200
+    return jsonify({"status": "failure", "msg": "Authentication failed"}), 200

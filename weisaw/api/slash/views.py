@@ -21,8 +21,6 @@ slash_blueprint = Blueprint(blue_print_name, __name__, url_prefix=blue_print_pre
 
 @slash_blueprint.before_request
 def perform_before_request_tasks():
-    is_token_valid = request.form['token'] == os.environ['SLACK_VERIFICATION_TOKEN']
-    # is_team_id_valid = request.form['team_id'] == os.environ['SLACK_TEAM_ID']
 
     g.user_id = request.form['user_id']
     g.channel_id = request.form['channel_id']
@@ -30,14 +28,6 @@ def perform_before_request_tasks():
     g.enterprise_id = request.form['enterprise_id']
     g.user_name = request.form['user_name']
     g.response_url = request.form['response_url']
-
-    if not is_token_valid:
-        return jsonify(
-            {
-                "response_type": "ephemeral",
-                "text": "Invalid verification token supplied :O",
-            }
-        ), 401
 
 
 @slash_blueprint.route('/wfh', methods=["POST"])
