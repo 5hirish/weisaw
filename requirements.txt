@@ -1,5 +1,6 @@
 pytest
 gunicorn
+psycopg2
 
 flask
 werkzeug[watchdog]
