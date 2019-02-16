@@ -4,6 +4,7 @@ psycopg2
 
 flask
 werkzeug[watchdog]
+flask-bcrypt
 flask_sqlalchemy
 flask_migrate
 flask-dotenv

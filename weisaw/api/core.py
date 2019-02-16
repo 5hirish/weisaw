@@ -7,7 +7,7 @@ from flask import Flask, jsonify
 from datetime import datetime
 
 from weisaw.api.settings import ProdConfig
-from weisaw.api.extensions import migrate, db, env
+from weisaw.api.extensions import migrate, db, env, bcrypt
 
 app_name = 'weisaw'
 
@@ -37,6 +37,7 @@ def create_app(config_object=ProdConfig, enable_blueprints=True):
 def register_extensions(app):
     """Register Flask extensions."""
     # sentry.init_app(app)
+    bcrypt.init_app(app)
     env.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
@@ -47,9 +48,11 @@ def register_blueprints(app):
 
     # defer the import until it is really needed
 
+    from weisaw.api.auth.views import auth_blueprint
     from weisaw.api.slash.views import slash_blueprint
 
     """Register Flask blueprints."""
+    app.register_blueprint(auth_blueprint)
     app.register_blueprint(slash_blueprint)
 
     return None
