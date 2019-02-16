@@ -5,6 +5,8 @@ import os
 
 from flask import Flask, jsonify
 from datetime import datetime
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 from weisaw.api.settings import ProdConfig
 from weisaw.api.extensions import migrate, db
@@ -36,9 +38,15 @@ def create_app(config_object=ProdConfig, enable_blueprints=True):
 
 def register_extensions(app):
     """Register Flask extensions."""
-    # sentry.init_app(app)
+
+    sentry_sdk.init(
+        dsn=app.config.get("SENTRY_DSN"),
+        integrations=[FlaskIntegration()]
+    )
+
     db.init_app(app)
     migrate.init_app(app, db)
+
     return None
 
 
