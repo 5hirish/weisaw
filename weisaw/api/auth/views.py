@@ -58,7 +58,7 @@ def post_install():
     if auth_response is not None:
         pass
 
-    os.environ["SLACK_USER_TOKEN"] = auth_response['access_token']
-    os.environ["SLACK_BOT_TOKEN"] = auth_response['bot']['bot_access_token']
+    # os.environ["SLACK_USER_TOKEN"] = auth_response['access_token']
+    # os.environ["SLACK_BOT_TOKEN"] = auth_response['bot']['bot_access_token']
 
     return auth_response
