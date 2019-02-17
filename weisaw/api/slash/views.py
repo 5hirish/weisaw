@@ -31,6 +31,16 @@ def perform_before_request_tasks():
     g.response_url = request.form['response_url']
 
 
+@slash_blueprint.route('/hello', methods=["POST"])
+def slack_greet():
+    return jsonify(
+        {
+            "response_type": "ephemeral",
+            "text": "Hello, {0}".format(g.user_name),
+        }
+    ), 200
+
+
 @slash_blueprint.route('/wfh', methods=["POST"])
 @slash_blueprint.route('/ooo', methods=["POST"])
 def slack_apply_leave(leave_type="ooo"):
