@@ -266,6 +266,8 @@ def insert_employee_leave(emp_leave_info):
     db.session.add(emp_leave_info)
     db.session.commit()
 
+    current_app.logger.debug("Inserted user leave information")
+
 
 def get_slack_access_token(team_id):
     slack_auth = SlackOAuth.query.filter_by(slackTeamId=team_id).order_by(SlackOAuth.updatedAt.desc()).first()
@@ -275,9 +277,11 @@ def get_slack_access_token(team_id):
 
 def get_slack_user_info(user_id, team_id):
 
+    current_app.logger.debug("Fetching access token for the team")
     slack_access_token = get_slack_access_token(team_id)
 
     if slack_access_token is not None:
+        current_app.logger.debug("Fetching user info")
         sc = SlackClient(slack_access_token)
 
         slack_user_info = sc.api_call("users.info", user=user_id)

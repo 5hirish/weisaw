@@ -53,7 +53,7 @@ def post_install():
         code=auth_code
     )
 
-    print(auth_response)
+    current_app.logger.debug("Requested access token")
 
     if auth_response is not None and auth_response.get("ok"):
         auth_access_token = auth_response.get("access_token")
@@ -79,6 +79,8 @@ def post_install():
 
         db.session.add(slack_oauth)
         db.session.commit()
+
+        current_app.logger.debug("Inserted access token")
 
         return jsonify({"status": "success", "msg": "Authentication successful"}), 200
     return jsonify({"status": "failure", "msg": "Authentication failed"}), 200
