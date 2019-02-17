@@ -71,11 +71,11 @@ def register_error_handlers(app):
         # If a HTTPException, pull the `code` attribute; default to 500
         error_code = getattr(error, 'code', 500)
         if error_code == 404:
-            return jsonify({"success": False, "msg": "API not found :("}), error_code
+            return jsonify({"response_type": "ephemeral", "text": "This slash command isn't supported :("}), 200
         elif error_code == 405:
-            return jsonify({"success": False, "msg": "API method not allowed :/"}), error_code
+            return jsonify({"response_type": "ephemeral", "text": "This slash command couldn't be served :/"}), 200
         elif error_code == 500:
-            return jsonify({"success": False, "msg": "Internal api error X("}), error_code
+            return jsonify({"response_type": "ephemeral", "text": "Something went wrong with this command X("}), 200
     for errcode in [404, 405, 500]:
         app.errorhandler(errcode)(return_error)
     return None

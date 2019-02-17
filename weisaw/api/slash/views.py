@@ -10,6 +10,7 @@ from sqlalchemy.sql.expression import and_, or_
 
 from weisaw.api.extensions import db
 from weisaw.base.models.employee_leave_model import EmployeeLeaveModel
+from weisaw.base.models.slack_auth_model import SlackOAuth
 
 blue_print_name = 'slash'
 blue_print_prefix = '/slash'
@@ -78,12 +79,12 @@ def slack_apply_leave(leave_type="ooo"):
                                 .format("example@abc.in", str(start_date), str(end_date), str(days_count), leave_type,
                                         raw_text, g.user_name))
 
-        user_email, user_full_name, user_avatar = get_slack_user_info(g.user_id)
+        user_email, user_full_name, user_avatar = get_slack_user_info(g.user_id, g.team_id)
 
         if user_email is not None:
 
             emp_leave = EmployeeLeaveModel(
-                emailAddress="abc@example.com",
+                emailAddress=user_email,
                 startDate=start_date,
                 endDate=end_date,
                 daysCount=days_count,
@@ -266,19 +267,27 @@ def insert_employee_leave(emp_leave_info):
     db.session.commit()
 
 
-def get_slack_user_info(user_id):
+def get_slack_access_token(team_id):
+    slack_auth = SlackOAuth.query.filter_by(slackTeamId=team_id).order_by(SlackOAuth.updatedAt.desc()).first()
+    if slack_auth is not None:
+        return slack_auth.accessToken
 
-    slack_token = os.environ["SLACK_API_TOKEN"]
-    sc = SlackClient(slack_token)
 
-    slack_user_info = sc.api_call("users.info", user=user_id)
+def get_slack_user_info(user_id, team_id):
 
-    if slack_user_info is not None and slack_user_info.get("ok") and slack_user_info.get("user") is not None:
-        if slack_user_info.get("user").get("profile") is not None:
-            slack_user_profile = slack_user_info.get("user").get("profile")
-            user_email = slack_user_profile.get("email")
-            full_name = slack_user_profile.get("real_name")
-            avatar = slack_user_profile.get("image_512")
+    slack_access_token = get_slack_access_token(team_id)
 
-            return user_email, full_name, avatar
+    if slack_access_token is not None:
+        sc = SlackClient(slack_access_token)
+
+        slack_user_info = sc.api_call("users.info", user=user_id)
+
+        if slack_user_info is not None and slack_user_info.get("ok") and slack_user_info.get("user") is not None:
+            if slack_user_info.get("user").get("profile") is not None:
+                slack_user_profile = slack_user_info.get("user").get("profile")
+                user_email = slack_user_profile.get("email")
+                full_name = slack_user_profile.get("real_name")
+                avatar = slack_user_profile.get("image_512")
+
+                return user_email, full_name, avatar
     return None, None, None
