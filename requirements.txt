@@ -1,3 +1,6 @@
+raven
+sqlalchemy
+celery
 pytest
 gunicorn
 psycopg2

@@ -23,13 +23,13 @@ weisaw_app = create_app(app_config)
 
 if __name__ == '__main__':
 
-    app_config = configure_app()
-    weisaw_app = create_app(app_config)
-
     if str(os.environ.get('FLASK_ENV')) != 'prod':
         app_debug = True
     else:
         app_debug = False
+
+    app_config = configure_app()
+    weisaw_app = create_app(app_config)
 
     weisaw_app.debug = app_debug
     # set a 'SECRET_KEY' to enable the Flask session cookies in debug toolbar
