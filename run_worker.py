@@ -1,6 +1,5 @@
 import os
 from weisaw.worker.core import celery_task
-from dotenv import load_dotenv
 
 if __name__ == '__main__':
 
