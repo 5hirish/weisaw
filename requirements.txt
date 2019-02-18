@@ -1,3 +1,4 @@
+requests
 raven
 sqlalchemy
 celery

@@ -1,6 +1,7 @@
 import spacy
 import dateparser
 import requests
+import json
 
 from datetime import datetime
 
@@ -155,6 +156,6 @@ def post_slack_replay(response_url, payload):
         'Content-Type': "application/json"
     }
 
-    response = requests.post(response_url, data=payload, headers=headers)
+    response = requests.post(response_url, data=json.dumps(payload), headers=headers)
 
     logger.debug(response)
