@@ -26,7 +26,7 @@ def perform_before_request_tasks():
     g.user_id = request.form['user_id']
     g.channel_id = request.form['channel_id']
     g.team_id = request.form['team_id']
-    g.enterprise_id = request.form['enterprise_id']
+    # g.enterprise_id = request.form['enterprise_id']
     g.user_name = request.form['user_name']
     g.response_url = request.form['response_url']
 
@@ -85,11 +85,12 @@ def slack_apply_leave(leave_type="ooo"):
             days_count = 1
 
     if start_date is not None and end_date is not None and days_count > 0:
-        current_app.logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
-                                .format("example@abc.in", str(start_date), str(end_date), str(days_count), leave_type,
-                                        raw_text, g.user_name))
 
         user_email, user_full_name, user_avatar = get_slack_user_info(g.user_id, g.team_id)
+
+        current_app.logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
+                                .format(user_email, str(start_date), str(end_date), str(days_count), leave_type,
+                                        raw_text, g.user_name))
 
         if user_email is not None:
 
@@ -104,7 +105,6 @@ def slack_apply_leave(leave_type="ooo"):
                 slackUserId=g.user_id,
                 slackChannelId=g.channel_id,
                 slackTeamId=g.team_id,
-                slackEnterpriseId=g.enterprise_id,
                 slackFullName=user_full_name,
                 slackAvatarUrl=user_avatar,
                 createdAt=datetime.now(),

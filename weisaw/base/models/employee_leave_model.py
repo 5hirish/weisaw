@@ -23,7 +23,6 @@ class EmployeeLeaveModel(Model):
     slackUserId = Column(VARCHAR(15), nullable=False)
     slackChannelId = Column(VARCHAR(15), nullable=False)
     slackTeamId = Column(VARCHAR(15), nullable=False)
-    slackEnterpriseId = Column(VARCHAR(15), nullable=True)
     slackFullName = Column(VARCHAR(255), nullable=True)
     slackAvatarUrl = Column(TEXT, nullable=True)
     createdAt = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
