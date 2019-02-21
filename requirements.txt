@@ -9,7 +9,6 @@ psycopg2
 flask
 sentry-sdk[flask]
 werkzeug[watchdog]
-flask-bcrypt
 flask_sqlalchemy
 flask_migrate
 
