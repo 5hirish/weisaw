@@ -1,4 +1,4 @@
-# WeiSaw
+# WeiSaw: Slack App
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Twitter](https://img.shields.io/twitter/follow/openebs.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=5hirish)
@@ -31,6 +31,8 @@ Suggest features under the label "**feature request**" [here](https://github.com
 * PostgreSQL
 
 Python Package dependencies listed in [requirements.txt](requirements.txt)
+
+Slack API: [https://api.slack.com/](https://api.slack.com/)
 
 ### Maintainer
 * _@5hirish_, [shirishkadam.com](https://shirishkadam.com/)
