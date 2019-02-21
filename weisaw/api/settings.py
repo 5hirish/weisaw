@@ -31,8 +31,8 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    CELERY_BROKER_URL = os.getenv("CLOUDAMQP_URL")
-    BROKER_POOL_LIMIT = 1
+    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+    # BROKER_POOL_LIMIT = 1
 
 
 class ProdConfig(Config):
