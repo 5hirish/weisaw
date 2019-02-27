@@ -2,9 +2,8 @@ import spacy
 import dateparser
 import requests
 import json
-
+from spacy.symbols import *
 from datetime import datetime
-
 from slackclient import SlackClient
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import create_engine
@@ -24,31 +23,8 @@ logger = get_task_logger(__name__)
                   bind=False, max_retries=3, default_retry_delay=300, track_started=True,
                   base=BaseTask)
 def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, response_url):
-    nlp = spacy.load('en_core_web_sm')
-    cmd_doc = nlp(raw_text)
 
-    date_list = []
-    start_date, end_date = None, None
-    days_count = 0
-
-    for ent in cmd_doc.ents:
-        if ent.label_ == "DATE" or ent.label_ == "TIME":
-            date_list.append(dateparser.parse(ent.text, languages=['en']))
-
-    if date_list is not None and len(date_list) > 0:
-        date_list.sort(reverse=True)
-
-        if len(date_list) == 2:
-
-            end_date = date_list[0]
-            start_date = date_list[1]
-            delta_leave = end_date - start_date
-            days_count = delta_leave.days + 1
-
-        elif len(date_list) == 1:
-            end_date = date_list[0]
-            start_date = date_list[0]
-            days_count = 1
+    start_date, end_date, days_count = extract_leave_features(raw_text)
 
     if start_date is not None and end_date is not None and days_count > 0:
 
@@ -106,6 +82,51 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
 
         post_slack_replay(response_url, slack_response)
         return None
+
+
+def extract_leave_features(raw_text):
+    nlp = spacy.load('en_core_web_sm')
+    cmd_doc = nlp(raw_text)
+
+    date_list = []
+    start_date, end_date = None, None
+    days_count = 0
+    leave_date_list = []
+
+    np_labels = set([nsubj, nsubjpass, dobj, iobj, pobj])
+    np_tags = set([PROPN, NOUN])
+
+    for token in cmd_doc:
+        # if token.dep in np_labels:
+        #     noun_phrase = token.subtree
+        # if token.dep == root and token.tag_ == ADV:
+        if token.pos in np_tags:
+            if token.dep_ == "ROOT":
+                # PROPN > NOUN >ADJ
+                for sub_token in token.subtree:
+                    print(sub_token.text, sub_token.dep_, sub_token.pos_)
+
+        if token.ent_type_ == "DATE" or token.ent_type_ == "TIME" or token.ent_type_ == "ORDINAL":
+            date_list.append(dateparser.parse(token.text, languages=['en']))
+
+    if date_list is not None and len(date_list) > 0:
+        date_list.sort(reverse=True)
+
+        if len(date_list) == 2:
+
+            end_date = date_list[0]
+            start_date = date_list[1]
+            delta_leave = end_date - start_date
+            leave_date_list.append({"from": start_date, "to": end_date})
+            # days_count = delta_leave.days + 1
+
+        elif len(date_list) == 1:
+            end_date = date_list[0]
+            start_date = date_list[0]
+            leave_date_list.append({"from": start_date, "to": end_date})
+            # days_count = 1
+
+    return leave_date_list
 
 
 def get_db_session():

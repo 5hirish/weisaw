@@ -1,6 +1,9 @@
 # WeiSaw: Slack App
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/2e669faacb12496f9d4e97f3a0cfc361)](https://www.codacy.com/app/5hirish/weisaw?utm_source=github.com&utm_medium=referral&utm_content=5hirish/weisaw&utm_campaign=badger)
+[![Codecov](https://codecov.io/gh/5hirish/adam_qas/branch/master/graph/badge.svg)](https://codecov.io/gh/5hirish/weisaw)
+[![Build Status](https://travis-ci.org/5hirish/weisaw.svg?branch=master)](https://travis-ci.org/5hirish/weisaw)
 [![Twitter](https://img.shields.io/twitter/follow/openebs.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=5hirish)
 
 WeiSaw is a Slack app that has the potential to be your workspace manager. So pitch in with feature requests, code contributions to make it your workspace manager.
