@@ -7,6 +7,7 @@ gunicorn
 psycopg2
 
 flask
+sentry-sdk
 sentry-sdk[flask]
 werkzeug[watchdog]
 flask_sqlalchemy
