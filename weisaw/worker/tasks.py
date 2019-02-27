@@ -2,6 +2,7 @@ import spacy
 import dateparser
 import requests
 import json
+import os
 
 from datetime import datetime
 
@@ -23,7 +24,7 @@ logger = get_task_logger(__name__)
 @celery_task.task(name=task_base_name + "parse_leave",
                   bind=False, max_retries=3, default_retry_delay=300, track_started=True,
                   base=BaseTask)
-def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, response_url):
+def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, response_url, oauth_access_token):
     nlp = spacy.load('en_core_web_sm')
     cmd_doc = nlp(raw_text)
 
@@ -52,7 +53,7 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
 
     if start_date is not None and end_date is not None and days_count > 0:
 
-        user_email, user_full_name, user_avatar = get_slack_user_info(user_id, team_id)
+        user_email, user_full_name, user_avatar = get_slack_user_info(user_id, team_id, oauth_access_token)
 
         logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
                     .format(user_email, str(start_date), str(end_date), str(days_count), leave_type,
@@ -61,12 +62,12 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
         if user_email is not None:
 
             emp_leave = EmployeeLeaveModel(
-                emailAddress=user_email,
                 startDate=start_date,
                 endDate=end_date,
                 daysCount=days_count,
                 leaveType=leave_type,
                 rawComment=raw_text,
+                slackEmailAddress=user_email,
                 slackUsername=user_name,
                 slackUserId=user_id,
                 slackChannelId=channel_id,
@@ -79,7 +80,7 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
             insert_employee_leave(emp_leave)
 
             response_msg = "Got it {0}...Safe travel!".format(user_name)
-            if end_date == start_date:
+            if end_date != start_date:
                 attachment_msg = "Out of Office from {0} till {1}".format(start_date.strftime("%d/%b/%y"),
                                                                           end_date.strftime("%d/%b/%y"))
             else:
@@ -109,7 +110,7 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
 
 
 def get_db_session():
-    db = create_engine('sqlite:///:memory:', echo=True)
+    db = create_engine(os.getenv("DATABASE_URL"), echo=True)
     session_maker = sessionmaker(bind=db)
     session = session_maker()
     return session
@@ -129,9 +130,12 @@ def get_slack_access_token(team_id):
         return slack_auth.accessToken
 
 
-def get_slack_user_info(user_id, team_id):
+def get_slack_user_info(user_id, team_id, oauth_access_token):
     logger.debug("Fetching access token for the team")
-    slack_access_token = get_slack_access_token(team_id)
+    if oauth_access_token is None:
+        slack_access_token = get_slack_access_token(team_id)
+    else:
+        slack_access_token = oauth_access_token
 
     if slack_access_token is not None:
         logger.debug("Fetching user info")
