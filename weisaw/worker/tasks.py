@@ -79,12 +79,18 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
 
             insert_employee_leave(emp_leave)
 
+            if leave_type == "ooo":
+                leave_str = "Out of Office"
+            else:
+                leave_str = "Working from Home"
+
             response_msg = "Got it {0}...Safe travel!".format(user_name)
             if end_date != start_date:
-                attachment_msg = "Out of Office from {0} till {1}".format(start_date.strftime("%d/%b/%y"),
-                                                                          end_date.strftime("%d/%b/%y"))
+                attachment_msg = "{0} from {1} till {2}".format(leave_str,
+                                                                start_date.strftime("%d/%b/%y"),
+                                                                end_date.strftime("%d/%b/%y"))
             else:
-                attachment_msg = "Out of Office on {0}".format(start_date.strftime("%d/%b/%y"))
+                attachment_msg = "{0} on {1}".format(leave_str, start_date.strftime("%d/%b/%y"))
 
             slack_response = {
                     "response_type": "ephemeral",

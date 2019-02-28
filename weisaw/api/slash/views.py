@@ -85,7 +85,7 @@ def slack_emp_list_leaves():
                                                         EmployeeLeaveModel.slackTeamId == g.team_id,
                                                         EmployeeLeaveModel.endDate >= date.today()
                                                     )
-                                                ).all()
+                                                ).order_by(EmployeeLeaveModel.startDate).all()
 
     if emp_leaves is not None:
 
@@ -148,7 +148,7 @@ def slack_upcoming_leaves():
                                                         EmployeeLeaveModel.slackTeamId == g.team_id,
                                                         EmployeeLeaveModel.endDate >= date.today()
                                                     )
-                                                ).all()
+                                                ).order_by(EmployeeLeaveModel.startDate).all()
 
     if upcoming_leaves is not None:
 
