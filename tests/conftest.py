@@ -5,7 +5,7 @@ from weisaw.api.settings import TestConfig
 from datetime import datetime
 
 
-FAKE_TIME = datetime(2018, 1, 1, 0, 0, 0)
+FAKE_TIME = datetime(2019, 1, 1, 0, 0, 0)
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +35,7 @@ def celery_app(request):
     return celery_task
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(autouse=True)
 def patch_datetime_now(monkeypatch):
 
     class FreezeTime:
@@ -43,5 +43,6 @@ def patch_datetime_now(monkeypatch):
         def now(cls):
             return FAKE_TIME
 
-    monkeypatch.setattr('datetime.datetime', FreezeTime)
+    monkeypatch.setattr('tests.test_tasks.datetime', FreezeTime)
+    monkeypatch.setattr('weisaw.worker.tasks.datetime', FreezeTime)
     # monkeypatch.setattr(datetime, 'datetime', FreezeTime)
