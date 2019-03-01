@@ -64,6 +64,7 @@ class TestConfig(Config):
     ENV = 'test'
     TESTING = True
     DEBUG = True
+    CELERY_ALWAYS_EAGER = True
 
 
 
