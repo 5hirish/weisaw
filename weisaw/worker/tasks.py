@@ -34,7 +34,7 @@ def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, r
             start_date = leaves_date.get("from")
             end_date = leaves_date.get("to")
             leave_delta = end_date - start_date
-            days_count = leave_delta.days
+            days_count = leave_delta.days + 1
 
             if start_date is not None and end_date is not None and days_count > 0:
 
