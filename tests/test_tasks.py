@@ -23,7 +23,7 @@ from unittest.mock import patch, Mock
     ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
     ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
     ("OOO from Monday to Friday", [{"from": datetime(2019, 1, 7), "to": datetime(2019, 1, 11)}]),
-
+    ("OOO from Wednesday to Friday", [{"from": datetime(2019, 1, 2), "to": datetime(2019, 1, 4)}]),
 ])
 def test_extract_leave_features(raw_text, leave_expected_list):
     leave_date_list = extract_leave_features(raw_text)

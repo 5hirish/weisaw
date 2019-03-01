@@ -113,8 +113,8 @@ def extract_leave_features(raw_text):
                 conjunct_index = raw_tokens.index("to")
                 subtree_left = raw_tokens[:conjunct_index]
                 subtree_right = raw_tokens[conjunct_index + 1:]
-                leave_date_left, _ = parse_conjunct_subtree(subtree_left, date_pattern)
-                leave_date_right, _ = parse_conjunct_subtree(subtree_right, date_pattern, 7)
+                leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern)
+                leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern, auto_add)
 
                 if leave_date_left is not None and leave_date_right is not None:
                     if leave_date_left > leave_date_right:
@@ -128,8 +128,8 @@ def extract_leave_features(raw_text):
             conjunct_index = raw_tokens.index(conjunct_token)
             subtree_left = raw_tokens[:conjunct_index]
             subtree_right = raw_tokens[conjunct_index + 1:]
-            leave_date_left, _ = parse_conjunct_subtree(subtree_left, date_pattern)
-            leave_date_right, _ = parse_conjunct_subtree(subtree_right, date_pattern)
+            leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern)
+            leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern)
 
             if leave_date_left is not None:
                 date_results.append({"from": leave_date_left, "to": leave_date_left})
@@ -139,7 +139,7 @@ def extract_leave_features(raw_text):
             conjunct_parse = True
 
     if not conjunct_parse:
-        leave_date_start, leave_date_end = parse_conjunct_subtree(raw_tokens, date_pattern)
+        leave_date_start, leave_date_end, auto_add = parse_conjunct_subtree(raw_tokens, date_pattern)
         if leave_date_start is not None and leave_date_end is not None:
             date_results.append({"from": leave_date_start, "to": leave_date_end})
         elif leave_date_start is not None:
@@ -162,38 +162,44 @@ def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
             inc_next = True
 
         if sub_token == "today":
-            return leave_date, None
+            return leave_date, None, None
 
         elif sub_token == "tomorrow":
             if inc_next:
                 leave_date = datetime.now() + relativedelta(days=2)
             else:
                 leave_date = datetime.now() + relativedelta(days=1)
-            return leave_date, None
+            return leave_date, None, None
 
         elif sub_token == "week":
             if inc_next:
                 # Get next Monday to Friday
                 leave_start = date_now + relativedelta(days=-date_now.weekday(), weeks=1)
                 leave_end = leave_start + relativedelta(days=4)
-                return leave_start, leave_end
+                return leave_start, leave_end, None
             if "rest" in sub_tree:
                 # Get next day to Friday
                 leave_start = datetime.now() + relativedelta(days=1)
                 friday_date = 4 - date_now.weekday()
                 leave_end = date_now + relativedelta(days=friday_date)
-                return leave_start, leave_end
+                return leave_start, leave_end, None
 
         elif sub_token in date_tokens.week_days:
             # Monday is 0 and Sunday is 6
             week_index = date_tokens.week_days.index(sub_token)
             delta_day = week_index - week_day_now
+            set_auto_inc = False
             if delta_day < 0:
                 delta_day = 7 + delta_day
+                set_auto_inc = True
             if inc_next:
                 delta_day = delta_day + 7
+
             delta_day += auto_add
             leave_date = leave_date + relativedelta(days=delta_day)
+
+            if set_auto_inc:
+                auto_add = 7
 
         elif sub_token in date_tokens.months or sub_token in date_tokens.months_short:
             if sub_token in date_tokens.months:
@@ -212,7 +218,7 @@ def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
             # if day_now < date_extracted:
             #     pass
             leave_date = leave_date.replace(day=date_extracted)
-    return leave_date, None
+    return leave_date, None, auto_add
 
 
 def is_short_month(short_token):
