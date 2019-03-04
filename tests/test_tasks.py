@@ -17,13 +17,10 @@ from unittest.mock import patch, Mock
     ("WFH next thursday", [{"from": datetime(2019, 1, 10), "to": datetime(2019, 1, 10)}]),
     ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
     ("OOO Not feeling well. Will be taking off today.", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
-    ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
-    ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
-    ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
-    ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
-    ("OOO today", [{"from": datetime(2019, 1, 1), "to": datetime(2019, 1, 1)}]),
     ("OOO from Monday to Friday", [{"from": datetime(2019, 1, 7), "to": datetime(2019, 1, 11)}]),
     ("OOO from Wednesday to Friday", [{"from": datetime(2019, 1, 2), "to": datetime(2019, 1, 4)}]),
+    ("WFH 20th Jan to 25th Jan", [{"from": datetime(2019, 1, 20), "to": datetime(2019, 1, 25)}]),
+    ("WFH 12th Jan, going to hospital", [{"from": datetime(2019, 1, 12), "to": datetime(2019, 1, 12)}])
 ])
 def test_extract_leave_features(raw_text, leave_expected_list):
     leave_date_list = extract_leave_features(raw_text)

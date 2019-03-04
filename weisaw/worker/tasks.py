@@ -108,13 +108,17 @@ def extract_leave_features(raw_text):
     date_results = []
 
     for conjunct_token in date_tokens.conjunctions:
-        if "from" in raw_tokens and "to" in raw_tokens:
+        if conjunct_token in raw_tokens:
             if conjunct_token == "to":
                 conjunct_index = raw_tokens.index("to")
                 subtree_left = raw_tokens[:conjunct_index]
                 subtree_right = raw_tokens[conjunct_index + 1:]
-                leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern)
-                leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern, auto_add)
+                leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern, is_subtree=True)
+                leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern, auto_add,
+                                                                       is_subtree=True)
+
+                if leave_date_right is None:
+                    leave_date_right = leave_date_left
 
                 if leave_date_left is not None and leave_date_right is not None:
                     if leave_date_left > leave_date_right:
@@ -122,19 +126,17 @@ def extract_leave_features(raw_text):
                     else:
                         date_results.append({"from": leave_date_left, "to": leave_date_right})
 
-                conjunct_parse = True
+            else:
+                conjunct_index = raw_tokens.index(conjunct_token)
+                subtree_left = raw_tokens[:conjunct_index]
+                subtree_right = raw_tokens[conjunct_index + 1:]
+                leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern, is_subtree=True)
+                leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern, is_subtree=True)
 
-        elif conjunct_token in raw_tokens and raw_tokens:
-            conjunct_index = raw_tokens.index(conjunct_token)
-            subtree_left = raw_tokens[:conjunct_index]
-            subtree_right = raw_tokens[conjunct_index + 1:]
-            leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern)
-            leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern)
-
-            if leave_date_left is not None:
-                date_results.append({"from": leave_date_left, "to": leave_date_left})
-            if leave_date_right is not None:
-                date_results.append({"from": leave_date_right, "to": leave_date_right})
+                if leave_date_left is not None:
+                    date_results.append({"from": leave_date_left, "to": leave_date_left})
+                if leave_date_right is not None:
+                    date_results.append({"from": leave_date_right, "to": leave_date_right})
 
             conjunct_parse = True
 
@@ -148,13 +150,14 @@ def extract_leave_features(raw_text):
     return date_results
 
 
-def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
+def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0, is_subtree=False):
     week_day_now = datetime.now().weekday()
     day_now = datetime.now().day
     month_now = datetime.now().month
     year_now = datetime.now().year
     date_now = datetime.now()
     leave_date = date_now
+    is_subtree_parsed = False
 
     for i, sub_token in enumerate(sub_tree):
         inc_next = False
@@ -172,6 +175,7 @@ def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
             return leave_date, None, None
 
         elif sub_token == "week":
+            is_subtree_parsed = True
             if inc_next:
                 # Get next Monday to Friday
                 leave_start = date_now + relativedelta(days=-date_now.weekday(), weeks=1)
@@ -185,6 +189,7 @@ def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
                 return leave_start, leave_end, None
 
         elif sub_token in date_tokens.week_days:
+            is_subtree_parsed = True
             # Monday is 0 and Sunday is 6
             week_index = date_tokens.week_days.index(sub_token)
             delta_day = week_index - week_day_now
@@ -202,6 +207,7 @@ def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
                 auto_add = 7
 
         elif sub_token in date_tokens.months or sub_token in date_tokens.months_short:
+            is_subtree_parsed = True
             if sub_token in date_tokens.months:
                 month_index = date_tokens.months.index(sub_token) + 1
             else:
@@ -214,10 +220,13 @@ def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0):
         str_match = ' '.join(sub_tree)
         date_matched = re.search(date_pattern, str_match)
         if date_matched is not None and date_matched.group() is not None:
+            is_subtree_parsed = True
             date_extracted = int(date_matched.group())
             # if day_now < date_extracted:
             #     pass
             leave_date = leave_date.replace(day=date_extracted)
+    if is_subtree and not is_subtree_parsed:
+        return None, None, auto_add
     return leave_date, None, auto_add
 
 
