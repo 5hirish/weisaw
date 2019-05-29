@@ -200,3 +200,48 @@ def slack_upcoming_leaves():
         ), 200
 
 
+@slash_blueprint.route('/delete', methods=["POST"])
+def slack_delete_leave():
+    """
+    Delete leaves from database
+    :return:
+    """
+
+    raw_text = request.form['text']
+
+    if raw_text is not None and raw_text != "":
+
+        try:
+            leave_id = int(raw_text)
+        except ValueError:
+            return {}
+
+        discard_leave = EmployeeLeaveModel.query.filter(
+            and_(
+                EmployeeLeaveModel.slackTeamId == g.team_id,
+                EmployeeLeaveModel.uUid == leave_id,
+                EmployeeLeaveModel.startDate >= date.today()
+            )
+        ).one()
+
+        if discard_leave is not None:
+
+            db.session.delete(discard_leave)
+            db.session.commit()
+
+            slack_msg_builder = {
+                "response_type": "ephemeral",
+                "text": "Whoosh! its gone, deleted!",
+            }
+
+            return jsonify(slack_msg_builder), 200
+
+    else:
+        return jsonify(
+            {
+                "response_type": "ephemeral",
+                "text": "Give me a serial number of your leave and its gone!",
+            }
+        ), 200
+
+
