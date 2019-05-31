@@ -222,7 +222,7 @@ def slack_delete_leave():
                 EmployeeLeaveModel.uUid == leave_id,
                 EmployeeLeaveModel.startDate >= date.today()
             )
-        ).one()
+        ).one_or_none()
 
         if discard_leave is not None:
 
