@@ -7,15 +7,14 @@ gunicorn
 psycopg2
 
 flask
+sentry_sdk
 sentry-sdk[flask]
 werkzeug[watchdog]
 flask_sqlalchemy
 flask_migrate
 
 python-dotenv
-spacy
 dateparser
 slackclient
-
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.0.0/en_core_web_sm-2.0.0.tar.gz
+slack_log_handler
 

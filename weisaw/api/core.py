@@ -16,11 +16,6 @@ app_name = 'weisaw'
 
 def create_app(config_object=ProdConfig, enable_blueprints=True):
 
-    # sentry_sdk.init(
-    #     dsn=ProdConfig.SENTRY_DSN,
-    #     integrations=[FlaskIntegration()]
-    # )
-
     app = Flask(__name__)
 
     app.config.from_object(config_object)

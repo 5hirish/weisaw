@@ -58,7 +58,11 @@ def slack_apply_leave(leave_type="ooo"):
 
     raw_text = request.form['text']
 
-    parse_leave.delay(raw_text, leave_type, g.user_name, g.user_id, g.channel_id, g.team_id, g.response_url)
+    oauth_access_token = current_app.config.get("SLACK_OAUTH_TOKEN")
+
+    parse_leave.delay(raw_text, leave_type,
+                      g.user_name, g.user_id, g.channel_id, g.team_id, g.response_url,
+                      oauth_access_token)
 
     return jsonify(
         {
@@ -149,7 +153,7 @@ def slack_upcoming_leaves():
     if upcoming_leaves is not None:
 
         slack_msg_builder = {
-            "response_type": "ephemeral",
+            "response_type": "in_channel",
             "text": "Coming up:",
         }
 

@@ -26,8 +26,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     SLACK_CLIENT_ID = os.getenv('SLACK_CLIENT_ID')
     SLACK_CLIENT_SECRET = os.getenv('SLACK_CLIENT_SECRET')
-    SLACK_BOT_SCOPE = os.getenv('SLACK_BOT_SCOPE')
     SLACK_SIGNING_SECRET = os.getenv('SLACK_SIGNING_SECRET')
+    SLACK_BOT_SCOPE = os.getenv('SLACK_BOT_SCOPE')
+    SLACK_OAUTH_TOKEN = os.getenv('SLACK_OAUTH_TOKEN')
+    SLACK_OAUTH_BOT_TOKEN = os.getenv("SLACK_OAUTH_BOT_TOKEN")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -62,6 +64,7 @@ class TestConfig(Config):
     ENV = 'test'
     TESTING = True
     DEBUG = True
+    CELERY_ALWAYS_EAGER = True
 
 
 

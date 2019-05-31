@@ -53,6 +53,8 @@ sentry_client = get_sentry_client(app_config)
 celery_task = Celery()
 celery_task.config_from_object(task_app.config, namespace='CELERY')
 celery_task.autodiscover_tasks(packages=['weisaw.worker'])
+celery_task.conf.task_default_queue = 'weisaw'
+# celery_task.conf.task_routes = {'weisaw.worker.tasks.*': {'queue': 'weisaw'}}
 
 
 class BaseTask(celery_task.Task):
