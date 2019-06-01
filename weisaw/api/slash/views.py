@@ -150,7 +150,7 @@ def slack_upcoming_leaves():
                                                     )
                                                 ).all()
 
-    if upcoming_leaves is not None:
+    if upcoming_leaves is not None and len(upcoming_leaves) > 0:
 
         slack_msg_builder = {
             "response_type": "in_channel",
