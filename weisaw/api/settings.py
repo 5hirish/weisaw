@@ -1,6 +1,6 @@
 import os
 import logging
-from dotenv import load_dotenv
+from env_loader import load_env_config
 
 # from slack_log_handler import SlackLogHandler
 
@@ -12,9 +12,10 @@ class Config:
 
     if str(os.environ.get('FLASK_ENV')) != 'prod':
         app_debug = True
-        load_dotenv(verbose=True)
     else:
         app_debug = False
+
+    load_env_config()
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     SESSION_COOKIE_NAME = 'weisaw_app'
