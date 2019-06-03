@@ -1,6 +1,5 @@
 from weisaw.api.extensions import db
-from sqlalchemy.dialects.postgresql import UUID, VARCHAR, TIMESTAMP, DATE, TEXT, ARRAY, BOOLEAN, INTEGER
-from sqlalchemy import ForeignKey, String, Integer, text
+from sqlalchemy.types import VARCHAR, TIMESTAMP, DATE, TEXT, INTEGER
 from datetime import datetime
 
 # Alias common SQLAlchemy names
