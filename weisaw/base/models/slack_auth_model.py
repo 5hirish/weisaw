@@ -1,7 +1,8 @@
-from weisaw.api.extensions import db
-from sqlalchemy.types import VARCHAR, TIMESTAMP, TEXT, INTEGER
-from sqlalchemy import text
 from datetime import datetime
+
+from sqlalchemy.types import VARCHAR, TIMESTAMP, TEXT, INTEGER
+
+from weisaw.api.extensions import db
 
 # Alias common SQLAlchemy names
 Column = db.Column

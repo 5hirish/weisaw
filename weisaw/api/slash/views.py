@@ -1,15 +1,10 @@
-import spacy
-import dateparser
-import os
-from datetime import datetime, date
-from flask import Blueprint, Response, request, jsonify, session, send_file, current_app, g
+from datetime import date
 
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import and_, or_
+from flask import Blueprint, request, jsonify, current_app, g
+from sqlalchemy.sql.expression import and_
 
 from weisaw.api.extensions import db
 from weisaw.base.models.employee_leave_model import EmployeeLeaveModel
-from weisaw.base.models.slack_auth_model import SlackOAuth
 from weisaw.worker.tasks import parse_leave
 
 blue_print_name = 'slash'

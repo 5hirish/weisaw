@@ -1,15 +1,10 @@
-import spacy
-import dateparser
 import os
-from datetime import datetime, date
+
+from flask import Blueprint, request, jsonify, current_app
 from slackclient import SlackClient
-from flask import Blueprint, Response, request, jsonify, session, send_file, current_app, g
 
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import and_, or_
-
-from weisaw.base.models.slack_auth_model import SlackOAuth
 from weisaw.api.extensions import db
+from weisaw.base.models.slack_auth_model import SlackOAuth
 
 blue_print_name = 'auth'
 blue_print_prefix = '/auth'
