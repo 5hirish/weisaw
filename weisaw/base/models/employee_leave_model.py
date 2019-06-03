@@ -12,7 +12,7 @@ Model = db.Model
 class EmployeeLeaveModel(Model):
     __tablename__ = 'slackEmpLeaves'
 
-    uUid = Column(UUID, primary_key=True, server_default=text("uuid_generate_v4()"), unique=True, nullable=False)
+    uUid = Column(INTEGER, primary_key=True, unique=True, nullable=False)
     startDate = Column(DATE, nullable=False)
     endDate = Column(DATE, nullable=False)
     daysCount = Column(INTEGER, nullable=False)

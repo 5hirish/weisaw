@@ -1,21 +1,21 @@
-import spacy
-import dateparser
 import requests
 import json
+import re
+
+from dateparser.search import search_dates
 import os
 
 from datetime import datetime
-
+from dateutil.relativedelta import relativedelta
 from slackclient import SlackClient
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from celery import group, chain, states
 from celery.utils.log import get_task_logger
 
 from weisaw.base.models.employee_leave_model import EmployeeLeaveModel
 from weisaw.worker.core import celery_task, BaseTask
 from weisaw.base.models.slack_auth_model import SlackOAuth
+from weisaw.base.util import tokens as date_tokens
 
 task_base_name = "weisaw.worker."
 logger = get_task_logger(__name__)
@@ -25,94 +25,216 @@ logger = get_task_logger(__name__)
                   bind=False, max_retries=3, default_retry_delay=300, track_started=True,
                   base=BaseTask)
 def parse_leave(raw_text, leave_type, user_name, user_id, channel_id, team_id, response_url, oauth_access_token):
-    nlp = spacy.load('en_core_web_sm')
-    cmd_doc = nlp(raw_text)
+    leaves_date_list = extract_leave_features(raw_text)
 
-    date_list = []
-    start_date, end_date = None, None
-    days_count = 0
+    if leaves_date_list is not None and len(leaves_date_list) > 0:
 
-    for ent in cmd_doc.ents:
-        if ent.label_ == "DATE" or ent.label_ == "TIME":
-            date_list.append(dateparser.parse(ent.text, languages=['en']))
+        for leaves_date in leaves_date_list:
 
-    if date_list is not None and len(date_list) > 0:
-        date_list.sort(reverse=True)
+            start_date = leaves_date.get("from")
+            end_date = leaves_date.get("to")
+            leave_delta = end_date - start_date
+            days_count = leave_delta.days + 1
 
-        if len(date_list) == 2:
+            if start_date is not None and end_date is not None and days_count > 0:
 
-            end_date = date_list[0]
-            start_date = date_list[1]
-            delta_leave = end_date - start_date
-            days_count = delta_leave.days + 1
+                user_email, user_full_name, user_avatar = get_slack_user_info(user_id, team_id, oauth_access_token)
 
-        elif len(date_list) == 1:
-            end_date = date_list[0]
-            start_date = date_list[0]
-            days_count = 1
+                logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
+                            .format(user_email, str(start_date), str(end_date), str(days_count), leave_type,
+                                    raw_text, user_name))
 
-    if start_date is not None and end_date is not None and days_count > 0:
+                if user_email is not None:
 
-        user_email, user_full_name, user_avatar = get_slack_user_info(user_id, team_id, oauth_access_token)
+                    emp_leave = EmployeeLeaveModel(
+                        startDate=start_date,
+                        endDate=end_date,
+                        daysCount=days_count,
+                        leaveType=leave_type,
+                        rawComment=raw_text,
+                        slackEmailAddress=user_email,
+                        slackUsername=user_name,
+                        slackUserId=user_id,
+                        slackChannelId=channel_id,
+                        slackTeamId=team_id,
+                        slackFullName=user_full_name,
+                        slackAvatarUrl=user_avatar,
+                        createdAt=datetime.now(),
+                    )
 
-        logger.info('{0}, {1}, {2}, {3}, {4}, {5}, {6}'
-                    .format(user_email, str(start_date), str(end_date), str(days_count), leave_type,
-                            raw_text, user_name))
+                    insert_employee_leave(emp_leave)
 
-        if user_email is not None:
+                    if leave_type == "ooo":
+                        leave_str = "Out of Office"
+                    else:
+                        leave_str = "Working from Home"
 
-            emp_leave = EmployeeLeaveModel(
-                startDate=start_date,
-                endDate=end_date,
-                daysCount=days_count,
-                leaveType=leave_type,
-                rawComment=raw_text,
-                slackEmailAddress=user_email,
-                slackUsername=user_name,
-                slackUserId=user_id,
-                slackChannelId=channel_id,
-                slackTeamId=team_id,
-                slackFullName=user_full_name,
-                slackAvatarUrl=user_avatar,
-                createdAt=datetime.now(),
-            )
+                    response_msg = "Got it {0}...Safe travel!".format(user_name)
+                    if end_date != start_date:
+                        attachment_msg = "{0} from {1} till {2}".format(leave_str, start_date.strftime("%d/%b/%y"),
+                                                                        end_date.strftime("%d/%b/%y"))
+                    else:
+                        attachment_msg = "{0} on {1}".format(leave_str, start_date.strftime("%d/%b/%y"))
 
-            insert_employee_leave(emp_leave)
+                    slack_response = {
+                        "response_type": "ephemeral",
+                        "text": response_msg,
+                        "attachments": [
+                            {
+                                "color": "good",
+                                "text": attachment_msg
+                            }
+                        ]
+                    }
 
-            if leave_type == "ooo":
-                leave_str = "Out of Office"
-            else:
-                leave_str = "Working from Home"
-
-            response_msg = "Got it {0}...Safe travel!".format(user_name)
-            if end_date != start_date:
-                attachment_msg = "{0} from {1} till {2}".format(leave_str,
-                                                                start_date.strftime("%d/%b/%y"),
-                                                                end_date.strftime("%d/%b/%y"))
-            else:
-                attachment_msg = "{0} on {1}".format(leave_str, start_date.strftime("%d/%b/%y"))
-
-            slack_response = {
-                    "response_type": "ephemeral",
-                    "text": response_msg,
-                    "attachments": [
-                        {
-                            "color": "good",
-                            "text": attachment_msg
-                        }
-                    ]
-                }
-
-            post_slack_replay(response_url, slack_response)
-            return None
-
+                    post_slack_replay(response_url, slack_response)
+        return None
+    else:
         slack_response = {
-                "response_type": "ephemeral",
-                "text": "Oops! Something went wrong... :/",
-            }
+            "response_type": "ephemeral",
+            "text": "Oops! Something went wrong... :/",
+        }
 
         post_slack_replay(response_url, slack_response)
         return None
+
+
+def extract_leave_features(raw_text):
+    conjunct_parse = False
+    date_pattern = re.compile(r"(\d+)(?=st|nd|rd|th)")
+    raw_text = raw_text.lower()
+    raw_tokens = raw_text.split()
+
+    date_results = []
+
+    for conjunct_token in date_tokens.conjunctions:
+        if conjunct_token in raw_tokens:
+            if conjunct_token == "to":
+                conjunct_index = raw_tokens.index("to")
+                subtree_left = raw_tokens[:conjunct_index]
+                subtree_right = raw_tokens[conjunct_index + 1:]
+                leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern, is_subtree=True)
+                leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern, auto_add,
+                                                                       is_subtree=True)
+
+                if leave_date_right is None:
+                    leave_date_right = leave_date_left
+
+                if leave_date_left is not None and leave_date_right is not None:
+                    if leave_date_left > leave_date_right:
+                        date_results.append({"from": leave_date_right, "to": leave_date_left})
+                    else:
+                        date_results.append({"from": leave_date_left, "to": leave_date_right})
+
+            else:
+                conjunct_index = raw_tokens.index(conjunct_token)
+                subtree_left = raw_tokens[:conjunct_index]
+                subtree_right = raw_tokens[conjunct_index + 1:]
+                leave_date_left, _, auto_add = parse_conjunct_subtree(subtree_left, date_pattern, is_subtree=True)
+                leave_date_right, _, auto_add = parse_conjunct_subtree(subtree_right, date_pattern, is_subtree=True)
+
+                if leave_date_left is not None:
+                    date_results.append({"from": leave_date_left, "to": leave_date_left})
+                if leave_date_right is not None:
+                    date_results.append({"from": leave_date_right, "to": leave_date_right})
+
+            conjunct_parse = True
+
+    if not conjunct_parse:
+        leave_date_start, leave_date_end, auto_add = parse_conjunct_subtree(raw_tokens, date_pattern)
+        if leave_date_start is not None and leave_date_end is not None:
+            date_results.append({"from": leave_date_start, "to": leave_date_end})
+        elif leave_date_start is not None:
+            date_results.append({"from": leave_date_start, "to": leave_date_start})
+
+    return date_results
+
+
+def parse_conjunct_subtree(sub_tree, date_pattern, auto_add=0, is_subtree=False):
+    week_day_now = datetime.now().weekday()
+    day_now = datetime.now().day
+    month_now = datetime.now().month
+    year_now = datetime.now().year
+    date_now = datetime.now()
+    leave_date = date_now
+    is_subtree_parsed = False
+
+    for i, sub_token in enumerate(sub_tree):
+        inc_next = False
+        if i > 0 and (sub_tree[i - 1] == "next" or sub_tree[i - 1] == "after"):
+            inc_next = True
+
+        if sub_token == "today":
+            return leave_date, None, None
+
+        elif sub_token == "tomorrow":
+            if inc_next:
+                leave_date = datetime.now() + relativedelta(days=2)
+            else:
+                leave_date = datetime.now() + relativedelta(days=1)
+            return leave_date, None, None
+
+        elif sub_token == "week":
+            is_subtree_parsed = True
+            if inc_next:
+                # Get next Monday to Friday
+                leave_start = date_now + relativedelta(days=-date_now.weekday(), weeks=1)
+                leave_end = leave_start + relativedelta(days=4)
+                return leave_start, leave_end, None
+            if "rest" in sub_tree:
+                # Get next day to Friday
+                leave_start = datetime.now() + relativedelta(days=1)
+                friday_date = 4 - date_now.weekday()
+                leave_end = date_now + relativedelta(days=friday_date)
+                return leave_start, leave_end, None
+
+        elif sub_token in date_tokens.week_days:
+            is_subtree_parsed = True
+            # Monday is 0 and Sunday is 6
+            week_index = date_tokens.week_days.index(sub_token)
+            delta_day = week_index - week_day_now
+            set_auto_inc = False
+            if delta_day < 0:
+                delta_day = 7 + delta_day
+                set_auto_inc = True
+            if inc_next:
+                delta_day = delta_day + 7
+
+            delta_day += auto_add
+            leave_date = leave_date + relativedelta(days=delta_day)
+
+            if set_auto_inc:
+                auto_add = 7
+
+        elif sub_token in date_tokens.months or sub_token in date_tokens.months_short:
+            is_subtree_parsed = True
+            if sub_token in date_tokens.months:
+                month_index = date_tokens.months.index(sub_token) + 1
+            else:
+                month_index = date_tokens.months_short.index(sub_token) + 1
+            delta_month = month_index - month_now
+            if delta_month < 0:
+                delta_month = delta_month + 12
+            leave_date = leave_date + relativedelta(months=delta_month)
+
+        str_match = ' '.join(sub_tree)
+        date_matched = re.search(date_pattern, str_match)
+        if date_matched is not None and date_matched.group() is not None:
+            is_subtree_parsed = True
+            date_extracted = int(date_matched.group())
+            # if day_now < date_extracted:
+            #     pass
+            leave_date = leave_date.replace(day=date_extracted)
+    if is_subtree and not is_subtree_parsed:
+        return None, None, auto_add
+    return leave_date, None, auto_add
+
+
+def is_short_month(short_token):
+    for i, month in enumerate(date_tokens.months):
+        if month.startswith(short_token):
+            return i + 1
+    return 0
 
 
 def get_db_session():
@@ -161,7 +283,6 @@ def get_slack_user_info(user_id, team_id, oauth_access_token):
 
 
 def post_slack_replay(response_url, payload):
-
     headers = {
         'Content-Type': "application/json"
     }
