@@ -13,6 +13,7 @@ sentry-sdk[flask]
 werkzeug[watchdog]
 flask_sqlalchemy
 flask_migrate
+blinker
 
 python-dotenv
 dateparser
