@@ -104,7 +104,7 @@ def slack_emp_list_leaves():
                 leave_period = emp_leave.startDate.strftime("%d/%b/%y") + " to " + emp_leave.endDate.strftime("%d/%b/%y")
 
             slack_msg_attachment = {
-                "title": str(i) + ") " + emp_leave.leaveType.upper(),
+                "title": str(emp_leave.uUid) + ") " + emp_leave.leaveType.upper(),
                 "color": msg_color,
                 "text": emp_leave.rawComment,
                 "fields": [
@@ -220,11 +220,13 @@ def slack_delete_leave():
                 }
             ), 200
 
+        date_after = date.today()
+
         discard_leave = EmployeeLeaveModel.query.filter(
             and_(
                 EmployeeLeaveModel.slackTeamId == g.team_id,
                 EmployeeLeaveModel.uUid == leave_id,
-                EmployeeLeaveModel.startDate >= date.today()
+                EmployeeLeaveModel.startDate >= date_after
             )
         ).one_or_none()
 
