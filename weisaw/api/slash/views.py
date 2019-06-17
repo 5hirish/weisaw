@@ -193,7 +193,7 @@ def slack_upcoming_leaves():
     else:
         return jsonify(
             {
-                "response_type": "ephemeral",
+                "response_type": "in_channel",
                 "text": "Wow! Everybody is in today.",
             }
         ), 200
