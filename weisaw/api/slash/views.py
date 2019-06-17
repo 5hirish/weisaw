@@ -213,7 +213,12 @@ def slack_delete_leave():
         try:
             leave_id = int(raw_text)
         except ValueError:
-            return {}
+            return jsonify(
+                {
+                    "response_type": "ephemeral",
+                    "text": "Could not find your leave...",
+                }
+            ), 200
 
         discard_leave = EmployeeLeaveModel.query.filter(
             and_(
@@ -234,6 +239,13 @@ def slack_delete_leave():
             }
 
             return jsonify(slack_msg_builder), 200
+        else:
+            return jsonify(
+                {
+                    "response_type": "ephemeral",
+                    "text": "Could not find your leave...",
+                }
+            ), 200
 
     else:
         return jsonify(
