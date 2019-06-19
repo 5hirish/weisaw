@@ -225,6 +225,7 @@ def slack_delete_leave():
         discard_leave = EmployeeLeaveModel.query.filter(
             and_(
                 EmployeeLeaveModel.slackTeamId == g.team_id,
+                EmployeeLeaveModel.slackUserId == g.user_id,
                 EmployeeLeaveModel.uUid == leave_id,
                 EmployeeLeaveModel.startDate >= date_after
             )
