@@ -258,3 +258,20 @@ def slack_delete_leave():
         ), 200
 
 
+@slash_blueprint.route('/how', methods=["POST"])
+def how_it_works():
+    return jsonify(
+        {
+            "response_type": "ephemeral",
+            "text": "*Bored?*\n Ping me `hello`.\n\n*Want to take a leave?*\n`ooo tomorrow`: Out of Office _Tomorrow, "
+                    "Today, Monday, Friday_...\n`ooo 2nd July to 4th July`: Bot understands dates when they are in "
+                    "ordinal form eg: 23rd, 21st followed by the month _June, July_\n_Some examples:_\n`ooo on 5th "
+                    "and 6th, not feeling well`\n`wfh tomorrow and day after tomorrow`\n`ooo for the rest of "
+                    "the week`\n`wfh next thursday`\n`ooo from Monday to Friday`\n\n*Want to work from home?*\n "
+                    "`wfh tomorrow`: Same as `ooo` command\n\n*Want check your leaves?*\n Use the `list` command"
+                    "\n\n*Want to delete your leaves?*\n Use the `list` command to get the serial number of the leave "
+                    "to be deleted and then use `delete` command with the serial number \neg. `delete 35`\n\n*"
+                    "What check who's not in office today?*\nUse `upcoming` command.\n\n\n"
+                    "_Open Source Project:_ https://github.com/5hirish/weisaw",
+        }
+    ), 200
